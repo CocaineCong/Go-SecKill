@@ -9,5 +9,5 @@ import (
 func Normal(c *gin.Context) {
 	gid, _ := strconv.Atoi(c.Query("gid"))
 	res := service.NormalSecKill(gid)
-
+	c.JSON(res.Status, res)
 }

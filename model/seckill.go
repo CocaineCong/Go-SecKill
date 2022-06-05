@@ -36,23 +36,23 @@ func UpdateCountByGoodsId(gid int) error {
 
 // 查询剩余数量
 func SelectCountByGoodsId(gid int) (int64, error) {
-	var count int64
+	var ps PromotionSecKill
 	err := DB.Model(PromotionSecKill{}).Where("goods_id=?", gid).
-		Count(&count).Error
-	return count, err
+		First(&ps).Error
+	return ps.PsCount, err
 }
 
 
 // 减少特定数量
 func ReduceStockByGoodsId(gid int, count int) error {
-	return DB.Model(PromotionSecKill{}).Where("goods_id=?", gid).
-		Update("ps_count=?", count).Error
+	return DB.Model(&PromotionSecKill{}).Where("goods_id=?", gid).
+		Update("ps_count", count).Error
 }
 
 // 减少一个
 func ReduceByGoodsId(gid int) (int64, error) {
 	var count int64
-	sqlStr := `UPDATE promotion_seckill SET ps_count = ps_count-1 WHERE ps_count>0 AND goods_id = ?`
+	sqlStr := `UPDATE promotion_sec_kill SET ps_count = ps_count-1 WHERE ps_count>0 AND goods_id = ?`
 	res := DB.Exec(sqlStr, gid)
 	if err := res.Error; err != nil {
 		return count, err
@@ -65,7 +65,7 @@ func ReduceByGoodsId(gid int) (int64, error) {
 // 减少指定数量
 func ReduceStockByOcc(gid int, num int, version int) (int64, error) {
 	var count int64
-	sqlStr := "UPDATE promotion_seckill SET ps_count = ps_count-?, version = version+1 " +
+	sqlStr := "UPDATE promotion_sec_kill SET ps_count = ps_count-?, version = version+1 " +
 		"WHERE version = ? AND goods_id = ?"
 	res := DB.Exec(sqlStr, num, version, gid)
 	if err := res.Error; err != nil {
@@ -76,7 +76,7 @@ func ReduceStockByOcc(gid int, num int, version int) (int64, error) {
 }
 
 // 删除已经秒杀成功的
-func DeleteByGoodsId(gid int64) error {
+func DeleteByGoodsId(gid int) error {
 	return DB.Where("goods_id=?", gid).Delete(SuccessKilled{}).Error
 }
 

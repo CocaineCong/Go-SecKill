@@ -1,10 +1,8 @@
 package model
 
 import (
-	"github.com/gin-gonic/gin"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
 	"time"
 )
@@ -12,12 +10,12 @@ import (
 var DB *gorm.DB
 
 func Database(conn string) {
-	var ormLogger logger.Interface
-	if gin.Mode() == "debug" {
-		ormLogger = logger.Default.LogMode(logger.Info)
-	} else {
-		ormLogger = logger.Default
-	}
+	//var ormLogger logger.Interface
+	//if gin.Mode() == "debug" {
+	//	ormLogger = logger.Default.LogMode(logger.Info)
+	//} else {
+	//	ormLogger = logger.Default
+	//}
 	db, err := gorm.Open(mysql.New(mysql.Config{
 		DSN:                       conn, // DSN data source name
 		DefaultStringSize:         256,      // string 类型字段的默认长度
@@ -26,7 +24,7 @@ func Database(conn string) {
 		DontSupportRenameColumn:   true,     // 用 `change` 重命名列，MySQL 8 之前的数据库和 MariaDB 不支持重命名列
 		SkipInitializeWithVersion: false,    // 根据版本自动配置
 	}), &gorm.Config{
-		Logger: ormLogger,
+		//Logger: ormLogger,
 		NamingStrategy: schema.NamingStrategy{
 			SingularTable: true,
 		},
