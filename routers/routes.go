@@ -17,8 +17,11 @@ func NewRouter() *gin.Engine {
 	// 单机锁
 	skGroup := r.Group("/api/v1")
 	{
-		// case1:不加锁,出现超卖现象
+		// 不加锁,出现超卖现象
 		skGroup.GET("/without-lock", api.WithoutLock)
+		// 加锁,没有问题
+		skGroup.GET("/with-lock", api.WithLock)
+		//
 	}
 	return r
 }

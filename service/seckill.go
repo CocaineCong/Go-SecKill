@@ -11,6 +11,7 @@ import (
 )
 
 var wg sync.WaitGroup
+var lock sync.Mutex
 
 func InitializerSecKill(gid int) {
 	tx := model.DB.Begin()            // 开启事务
@@ -25,7 +26,14 @@ func InitializerSecKill(gid int) {
 	tx.Commit()
 }
 
-func NormalSecKillGoods(gid, userID int) error {
+
+// 获取总共秒杀了多少商品
+func GetKilledCount(gid int) (int64, error) {
+	return model.GetKilledCountByGoodsId(gid)
+}
+
+
+func WithoutLockSecKillGoods(gid, userID int) error {
 	tx := model.DB.Begin()
 	// 检查库存
 	count, err := model.SelectCountByGoodsId(gid)
@@ -56,11 +64,6 @@ func NormalSecKillGoods(gid, userID int) error {
 	return nil
 }
 
-//
-func GetKilledCount(gid int) (int64, error) {
-	return model.GetKilledCountByGoodsId(gid)
-}
-
 func WithoutLockSecKill(gid int) serializer.Response {
 	code := e.SUCCESS
 	seckillNum := 50
@@ -69,7 +72,7 @@ func WithoutLockSecKill(gid int) serializer.Response {
 	for i := 0; i < seckillNum; i++ {
 		userID := i
 		go func() {
-			err := NormalSecKillGoods(gid, userID)
+			err := WithoutLockSecKillGoods(gid, userID)
 			if err != nil {
 				fmt.Println("Error",err)
 			} else {
@@ -91,6 +94,44 @@ func WithoutLockSecKill(gid int) serializer.Response {
 	}
 	fmt.Println(killedCount)
 	logging.Infof("kill %v product", killedCount)
+	return serializer.Response{
+		Status: code,
+		Msg:    e.GetMsg(code),
+	}
+}
+
+func WithLockSecKillGoods(gid,userID int) error {
+	lock.Lock()
+	err := WithoutLockSecKillGoods(gid, userID)
+	lock.Unlock()
+	return err
+}
+
+func WithLockSecKill(gid int) serializer.Response {
+	code := e.SUCCESS
+	seckillNum := 50
+	wg.Add(seckillNum)
+	InitializerSecKill(gid)
+	for i := 0; i < seckillNum; i++ {
+		userID := i
+		go func() {
+			err := WithLockSecKillGoods(gid, userID)
+			if err != nil {
+				code = e.ERROR
+				logging.Errorln("Error", err)
+			} else {
+				logging.Infof("User: %d seckill successfully.\n", userID)
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+	kCount, err := GetKilledCount(gid)
+	if err != nil {
+		code = e.ERROR
+		logging.Infoln("Error")
+	}
+	logging.Infof("Total %v goods", kCount)
 	return serializer.Response{
 		Status: code,
 		Msg:    e.GetMsg(code),
