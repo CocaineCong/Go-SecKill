@@ -25,14 +25,13 @@ func InitializerSecKill(gid int) {
 	tx.Commit()
 }
 
-func NormallSecKillGoods(gid, userID int) error {
+func NormalSecKillGoods(gid, userID int) error {
 	tx := model.DB.Begin()
 	// 检查库存
 	count, err := model.SelectCountByGoodsId(gid)
 	if err != nil {
 		return err
 	}
-
 	if count > 0 {
 		// 1. 扣库存
 		err = model.ReduceStockByGoodsId(gid, int(count-1))
@@ -62,7 +61,7 @@ func GetKilledCount(gid int) (int64, error) {
 	return model.GetKilledCountByGoodsId(gid)
 }
 
-func NormalSecKill(gid int) serializer.Response {
+func WithoutLockSecKill(gid int) serializer.Response {
 	code := e.SUCCESS
 	seckillNum := 50
 	wg.Add(seckillNum)
@@ -70,7 +69,7 @@ func NormalSecKill(gid int) serializer.Response {
 	for i := 0; i < seckillNum; i++ {
 		userID := i
 		go func() {
-			err := NormallSecKillGoods(gid, userID)
+			err := NormalSecKillGoods(gid, userID)
 			if err != nil {
 				fmt.Println("Error",err)
 			} else {
