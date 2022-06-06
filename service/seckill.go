@@ -303,7 +303,7 @@ func WithOccSecKill(gid int) serializer.Response {
 	for i := 0; i < seckillNum; i++ {
 		userID := i
 		go func() {
-			err := WithOccSecKillGoods(gid, userID,1)
+			err := WithOccSecKillGoods(gid, userID, 1)
 			if err != nil {
 				code = e.ERROR
 				logging.Errorln("Error", err)
