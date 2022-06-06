@@ -27,7 +27,7 @@ func NewRouter() *gin.Engine {
 		skGroup.GET("/with-pcc-update",api.WithPccUpdate)
 		// 加锁(数据库乐观锁，正常)
 		skGroup.GET("/with-occ",api.WithOcc)
-		// channel 限制
+		// channel 限制，正常
 		skGroup.GET("/with-channel",api.WithChannel)
 	}
 	return r

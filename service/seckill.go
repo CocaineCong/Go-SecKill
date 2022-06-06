@@ -325,3 +325,57 @@ func WithOccSecKill(gid int) serializer.Response {
 		Msg:    e.GetMsg(code),
 	}
 }
+
+func WithChannelSecKillGoods(gid, userID int) error {
+	kill := [2]int{gid, userID}
+	kChan := GetInstance()
+	*kChan <- kill
+	return nil
+}
+
+func ChannelConsumer() {
+	for {
+		kill, ok := <-(*GetInstance())
+		if !ok {
+			continue
+		}
+		err := WithoutLockSecKillGoods(kill[0], kill[1])
+		if err != nil {
+			logging.Error("Error")
+		} else {
+			logging.Infof("User:%v SecKill Successfully", kill[1])
+		}
+	}
+}
+
+func WithChannelSecKill(gid int) serializer.Response {
+	code := e.SUCCESS
+	seckillNum := 50
+	wg.Add(seckillNum)
+	InitializerSecKill(gid)
+	go ChannelConsumer()
+	for i := 0; i < seckillNum; i++ {
+		userID := i
+		go func() {
+			err := WithChannelSecKillGoods(gid, userID)
+			if err != nil {
+				code = e.ERROR
+				logging.Errorln("Error", err)
+			} else {
+				logging.Infof("User: %d seckill successfully.\n", userID)
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+	kCount, err := GetKilledCount(gid)
+	if err != nil {
+		code = e.ERROR
+		logging.Infoln("Error")
+	}
+	logging.Infof("Total %v goods", kCount)
+	return serializer.Response{
+		Status: code,
+		Msg:    e.GetMsg(code),
+	}
+}
