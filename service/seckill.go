@@ -199,3 +199,60 @@ func WithPccReadSecKill(gid int) serializer.Response {
 		Msg:    e.GetMsg(code),
 	}
 }
+
+func WithPccUpdateSecKillGoods(gid, userID int) error {
+	tx := model.DB.Begin()
+	// 1. 扣库存
+	count, err := model.ReduceByGoodsId(gid)
+	if err != nil {
+		return err
+	}
+	if count > 0 {
+		// 2. 创建订单
+		kill := model.SuccessKilled{
+			GoodsId:    int64(gid),
+			UserId:     int64(userID),
+			State:      0,
+			CreateTime: time.Now(),
+		}
+		err = model.CreateOrder(kill)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	tx.Commit()
+	return nil
+}
+
+
+func WithPccUpdateSecKill(gid int) serializer.Response {
+	code := e.SUCCESS
+	seckillNum := 50
+	wg.Add(seckillNum)
+	InitializerSecKill(gid)
+	for i := 0; i < seckillNum; i++ {
+		userID := i
+		go func() {
+			err := WithPccUpdateSecKillGoods(gid, userID)
+			if err != nil {
+				code = e.ERROR
+				logging.Errorln("Error", err)
+			} else {
+				logging.Infof("User: %d seckill successfully.\n", userID)
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+	kCount, err := GetKilledCount(gid)
+	if err != nil {
+		code = e.ERROR
+		logging.Infoln("Error")
+	}
+	logging.Infof("Total %v goods", kCount)
+	return serializer.Response{
+		Status: code,
+		Msg:    e.GetMsg(code),
+	}
+}

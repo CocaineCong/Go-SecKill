@@ -23,3 +23,9 @@ func WithPccRead(c *gin.Context) {
 	res := service.WithPccReadSecKill(gid)
 	c.JSON(res.Status, res)
 }
+
+func WithPccUpdate(c *gin.Context) {
+	gid, _ := strconv.Atoi(c.Query("gid"))
+	res := service.WithPccUpdateSecKill(gid)
+	c.JSON(res.Status, res)
+}
