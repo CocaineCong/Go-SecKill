@@ -1,6 +1,8 @@
 package model
 
-import "time"
+import (
+	"time"
+)
 
 type PromotionSecKill struct {
 	PsId         int64     `db:"ps_id"`
@@ -90,4 +92,12 @@ func GetKilledCountByGoodsId(gid int) (int64,error) {
 	var count int64
 	err := DB.Model(&SuccessKilled{}).Where("goods_id=?", gid).Count(&count).Error
 	return count, err
+}
+
+// 加读锁
+func SelectCountByGoodsIdPcc(gid int) (int64, error) {
+	skGood:=PromotionSecKill{}
+	err := DB.Model(PromotionSecKill{}).Set("gorm:query_option", "FOR UPDATE").
+		Where("goods_id=?",gid).First(&skGood).Error
+	return skGood.PsCount, err
 }

@@ -17,3 +17,9 @@ func WithLock(c *gin.Context) {
 	res := service.WithLockSecKill(gid)
 	c.JSON(res.Status, res)
 }
+
+func WithPccRead(c *gin.Context) {
+	gid, _ := strconv.Atoi(c.Query("gid"))
+	res := service.WithPccReadSecKill(gid)
+	c.JSON(res.Status, res)
+}
