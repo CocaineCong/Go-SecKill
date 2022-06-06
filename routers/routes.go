@@ -32,9 +32,11 @@ func NewRouter() *gin.Engine {
 	// 分布式
 	skDisGroup := r.Group("/api/v2")
 	{
-		skDisGroup.GET("rush", func(c *gin.Context) {
+		skDisGroup.GET("/rush", func(c *gin.Context) {
 			c.JSON(200, "success")
 		})
+		// 基于redis的redission分布式,正常
+		skDisGroup.GET("/with-redission", api.WithRedission)
 	}
 	return r
 }
