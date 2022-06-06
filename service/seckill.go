@@ -4,6 +4,7 @@ import (
 	"SecKill/model"
 	"SecKill/pkg/e"
 	"SecKill/serializer"
+	"errors"
 	"fmt"
 	logging "github.com/sirupsen/logrus"
 	"sync"
@@ -235,6 +236,74 @@ func WithPccUpdateSecKill(gid int) serializer.Response {
 		userID := i
 		go func() {
 			err := WithPccUpdateSecKillGoods(gid, userID)
+			if err != nil {
+				code = e.ERROR
+				logging.Errorln("Error", err)
+			} else {
+				logging.Infof("User: %d seckill successfully.\n", userID)
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+	kCount, err := GetKilledCount(gid)
+	if err != nil {
+		code = e.ERROR
+		logging.Infoln("Error")
+	}
+	logging.Infof("Total %v goods", kCount)
+	return serializer.Response{
+		Status: code,
+		Msg:    e.GetMsg(code),
+	}
+}
+
+func WithOccSecKillGoods(gid, userID,num int) error {
+	tx := model.DB.Begin()
+	good, err := model.SelectGoodByGoodsId(gid)
+	if err != nil {
+		return err
+	}
+	if int(good.PsCount) >= num {
+		// 1. 扣库存
+		count, err := model.ReduceStockByOcc(gid, num, int(good.Version))
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+		if count > 0 {
+			// 2. 创建订单
+			kill := model.SuccessKilled{
+				GoodsId:    int64(gid),
+				UserId:     int64(userID),
+				State:      0,
+				CreateTime: time.Now(),
+			}
+			err = model.CreateOrder(kill)
+			if err != nil {
+				tx.Rollback()
+				return err
+			}
+		} else {
+			tx.Rollback()
+		}
+	} else {
+		tx.Rollback()
+		return errors.New("库存不够了")
+	}
+	tx.Commit()
+	return nil
+}
+
+func WithOccSecKill(gid int) serializer.Response {
+	code := e.SUCCESS
+	seckillNum := 50
+	wg.Add(seckillNum)
+	InitializerSecKill(gid)
+	for i := 0; i < seckillNum; i++ {
+		userID := i
+		go func() {
+			err := WithOccSecKillGoods(gid, userID,1)
 			if err != nil {
 				code = e.ERROR
 				logging.Errorln("Error", err)
