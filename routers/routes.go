@@ -13,7 +13,6 @@ func NewRouter() *gin.Engine {
 	})
 	// 商品信息展示页面获取数据
 	r.GET("/good", api.GetGoodDetail)
-
 	// 单机锁
 	skGroup := r.Group("/api/v1")
 	{
@@ -29,6 +28,13 @@ func NewRouter() *gin.Engine {
 		skGroup.GET("/with-occ", api.WithOcc)
 		// channel 限制，正常
 		skGroup.GET("/with-channel", api.WithChannel)
+	}
+	// 分布式
+	skDisGroup := r.Group("/api/v2")
+	{
+		skDisGroup.GET("rush", func(c *gin.Context) {
+			c.JSON(200, "success")
+		})
 	}
 	return r
 }
