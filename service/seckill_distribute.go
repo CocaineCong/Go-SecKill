@@ -2,6 +2,7 @@ package service
 
 import (
 	"SecKill/cache"
+	"SecKill/model"
 	"SecKill/pkg/e"
 	"SecKill/serializer"
 	"bytes"
@@ -9,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/coreos/etcd/clientv3"
+	"github.com/go-redis/redis"
 	logging "github.com/sirupsen/logrus"
 	//"go.etcd.io/etcd/clientv3"
 	"math/rand"
@@ -193,3 +195,82 @@ func WithETCDSecKill(gid int) serializer.Response {
 		Msg:    e.GetMsg(code),
 	}
 }
+
+func WithRedisListSecKillGoods(gid, userID int) error {
+	g := strconv.Itoa(gid)
+	u := strconv.Itoa(userID)
+	if cache.RedisClient.Get(u + g).Val() == "" { // 这用户没有秒杀过
+		cache.RedisClient.RPop(g)
+		cache.RedisClient.Set(u+g, g, 3*time.Minute)
+		cache.RedisClient.ZAdd(g, redis.Z{float64(time.Now().Unix()), userID})
+	} else { // 这用户已经有记录了
+		return errors.New("该用户已经抢过了")
+	}
+	return nil
+}
+
+func AfterRedisListSecKill(gid int) error {
+	g := strconv.Itoa(gid)
+	ret, _ := cache.RedisClient.ZRevRangeWithScores(g, 0, -1).Result()
+	for _, z := range ret {
+		userID, err := strconv.Atoi(z.Member.(string))
+		tx := model.DB.Begin()
+		// 1. 扣库存
+		err = model.ReduceOneByGoodsId(gid)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+		// 2. 创建订单
+		kill := model.SuccessKilled{
+			GoodsId:    int64(gid),
+			UserId:     int64(userID),
+			State:      0,
+			CreateTime: time.Now(),
+		}
+		err = model.CreateOrder(kill)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+		tx.Commit()
+	}
+	return nil
+}
+
+func WithRedisList(gid int) serializer.Response {
+	code := e.SUCCESS
+	seckillNum := 50
+	wg.Add(seckillNum)
+	InitializerSecKill(gid)
+	g := strconv.Itoa(gid)
+	for i := 0; i < seckillNum; i++ {
+		cache.RedisClient.LPush(g, g)
+	}
+	for i := 0; i < seckillNum; i++ {
+		userID := i
+		go func() {
+			err := WithRedisListSecKillGoods(gid, userID)
+			if err != nil {
+				code = e.ERROR
+				logging.Errorln("Error", err)
+			} else {
+				logging.Infof("User: %d seckill successfully.\n", userID)
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+	err := AfterRedisListSecKill(gid)
+	kCount, err := GetKilledCount(gid)
+	if err != nil {
+		code = e.ERROR
+		logging.Infoln("Error")
+	}
+	logging.Infof("Total %v goods", kCount)
+	return serializer.Response{
+		Status: code,
+		Msg:    e.GetMsg(code),
+	}
+}
+

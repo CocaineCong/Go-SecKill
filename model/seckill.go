@@ -63,6 +63,13 @@ func ReduceByGoodsId(gid int) (int64, error) {
 	return count, nil
 }
 
+// 减少一个
+func ReduceOneByGoodsId(gid int) error {
+	sqlStr := `UPDATE promotion_sec_kill SET ps_count = ps_count-1 WHERE goods_id = ?`
+	res := DB.Exec(sqlStr, gid)
+	return res.Error
+}
+
 
 // 减少指定数量
 func ReduceStockByOcc(gid int, num int, version int) (int64, error) {

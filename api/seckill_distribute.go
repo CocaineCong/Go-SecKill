@@ -17,3 +17,9 @@ func WithETCD(c *gin.Context) {
 	res := service.WithETCDSecKill(gid)
 	c.JSON(res.Status, res)
 }
+
+func WithRedisList(c *gin.Context) {
+	gid, _ := strconv.Atoi(c.Query("gid"))
+	res := service.WithRedisList(gid)
+	c.JSON(res.Status, res)
+}

@@ -33,7 +33,6 @@ func GetKilledCount(gid int) (int64, error) {
 	return model.GetKilledCountByGoodsId(gid)
 }
 
-
 func WithoutLockSecKillGoods(gid, userID int) error {
 	tx := model.DB.Begin()
 	// 检查库存
