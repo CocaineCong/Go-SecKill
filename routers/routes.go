@@ -37,6 +37,8 @@ func NewRouter() *gin.Engine {
 		})
 		// 基于redis的redission分布式,正常
 		skDisGroup.GET("/with-redission", api.WithRedission)
+		// 基于ETCD的锁
+		skDisGroup.GET("/with-etcd", api.WithETCD)
 	}
 	return r
 }

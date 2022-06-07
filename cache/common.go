@@ -15,6 +15,8 @@ var (
 	RedisAddr  			string
 	RedisPw    			string
 	RedisDbName    		string
+	ETCDAddr    		string
+
 )
 
 // Redis 初始化redis链接
@@ -24,7 +26,9 @@ func init() {
 		fmt.Println("Redis 配置文件读取错误，请检查文件路径:", err)
 	}
 	LoadRedisData(file)
+	LoadETCDData(file)
 	Redis()
+	ETCD()
 }
 
 //Redis 在中间件中初始化redis链接
