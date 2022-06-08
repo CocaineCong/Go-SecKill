@@ -20,9 +20,9 @@ func NewRouter() *gin.Engine {
 		skGroup.GET("/without-lock", api.WithoutLock)
 		// 加锁(sync包中的Mutex类型的互斥锁),没有问题
 		skGroup.GET("/with-lock", api.WithLock)
-		// 加锁(数据库悲观锁，查询加锁)
+		// 加锁(数据库悲观锁，查询加锁),超卖
 		skGroup.GET("/with-pcc-read", api.WithPccRead)
-		// 加锁(数据库悲观锁，更新限定)
+		// 加锁(数据库悲观锁，更新限定), 正常
 		skGroup.GET("/with-pcc-update", api.WithPccUpdate)
 		// 加锁(数据库乐观锁，正常)
 		skGroup.GET("/with-occ", api.WithOcc)
