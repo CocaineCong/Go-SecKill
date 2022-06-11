@@ -6,15 +6,27 @@
 ## 1.1 实现方法
 ### 1.1.1 不加锁 出现超卖情况
 
+> api/v1/without-lock?gid=1197
+
 ### 1.1.2 加锁(sync包中的Mutex类型的互斥锁),没有问题
+
+> api/v1/with-lock?gid=1197
 
 ### 1.1.3 加锁(数据库悲观锁，读限定), 出现超卖
 
+> api/v1/with-pcc-read?gid=1197
+
 ### 1.1.4 加锁(数据库悲观锁，更新限定), 正常
+
+> api/v1/with-pcc-update?gid=1197
 
 ### 1.1.5 加锁(数据库乐观锁，正常)
 
+> api/v1/with-occ?gid=1197
+
 ### 1.1.6 使用 channel 限制，正常
+
+> api/v1/with-channel?gid=1197
 
 # 2. 分布式模式
 
@@ -27,16 +39,21 @@
 
 ### 2.2.1:基于Redisson的Redis分布式锁，正常
 
+> api/v2/with-redission?gid=1197
 
 注意要用Redis Lock把整个事务提交都包住。这里仅仅使用了Redis分布式提供的锁功能，秒杀数据处理还是直接访问数据库来完成
 
 ### 2.2.2:基于缓存的ETCD分布式锁，正常
+
+> api/v2/with-etcd?gid=1197
 
 类似于之前使用BlockingQueue时编写了一个单例模式的工具类来全局使用的形式相同，
 注意这里也要用ETCD分布式锁把整个事务提交都包住。这里只用了ETCD的分布式锁功能，
 秒杀数据处理也是直接访问数据库来完成
 
 ### 2.2.3:Redis的List队列，正常
+
+> api/v2/with-redis-list?gid=1197
 
 这里利用Redis分布式队列的方式是，在秒杀活动初始化阶段时有多少库存就在Redis的List中初始化多少个商品元素。
 然后每有一个用户进行秒杀，就从List队列中取出一个商品元素分配给该用户。
